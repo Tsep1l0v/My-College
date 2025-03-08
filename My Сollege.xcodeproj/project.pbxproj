@@ -6,17 +6,39 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4F55A4602CFE4D4900E1A8C4 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 4F55A45F2CFE4D4900E1A8C4 /* Lottie */; };
+		4F55A4632CFE4D5E00E1A8C4 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 4F55A4622CFE4D5E00E1A8C4 /* SwiftSoup */; };
+		4FA316F02D74B19300E1CE23 /* YandexMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 4FA316EF2D74B19300E1CE23 /* YandexMobileAds */; };
+		4FA316F22D74B19300E1CE23 /* YandexMobileAdsInstream in Frameworks */ = {isa = PBXBuildFile; productRef = 4FA316F12D74B19300E1CE23 /* YandexMobileAdsInstream */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		4FB7862E2D05B0E5002A2393 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		4F55A4222CFE309800E1A8C4 /* test111.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = test111.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4F55A4222CFE309800E1A8C4 /* My Сollege.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "My Сollege.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4FB786152D05B0E2002A2393 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		4FB786172D05B0E2002A2393 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		4F55A4342CFE309B00E1A8C4 /* Exceptions for "test111" folder in "test111" target */ = {
+		4F55A4342CFE309B00E1A8C4 /* Exceptions for "test111" folder in "My Сollege" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 4F55A4212CFE309800E1A8C4 /* test111 */;
+			target = 4F55A4212CFE309800E1A8C4 /* My Сollege */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -24,7 +46,7 @@
 		4F55A4242CFE309800E1A8C4 /* test111 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				4F55A4342CFE309B00E1A8C4 /* Exceptions for "test111" folder in "test111" target */,
+				4F55A4342CFE309B00E1A8C4 /* Exceptions for "test111" folder in "My Сollege" target */,
 			);
 			path = test111;
 			sourceTree = "<group>";
@@ -36,6 +58,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4F55A4602CFE4D4900E1A8C4 /* Lottie in Frameworks */,
+				4FA316F02D74B19300E1CE23 /* YandexMobileAds in Frameworks */,
+				4F55A4632CFE4D5E00E1A8C4 /* SwiftSoup in Frameworks */,
+				4FA316F22D74B19300E1CE23 /* YandexMobileAdsInstream in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -46,6 +72,7 @@
 			isa = PBXGroup;
 			children = (
 				4F55A4242CFE309800E1A8C4 /* test111 */,
+				4FB786142D05B0E2002A2393 /* Frameworks */,
 				4F55A4232CFE309800E1A8C4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -53,21 +80,31 @@
 		4F55A4232CFE309800E1A8C4 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				4F55A4222CFE309800E1A8C4 /* test111.app */,
+				4F55A4222CFE309800E1A8C4 /* My Сollege.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		4FB786142D05B0E2002A2393 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				4FB786152D05B0E2002A2393 /* WidgetKit.framework */,
+				4FB786172D05B0E2002A2393 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		4F55A4212CFE309800E1A8C4 /* test111 */ = {
+		4F55A4212CFE309800E1A8C4 /* My Сollege */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4F55A4352CFE309B00E1A8C4 /* Build configuration list for PBXNativeTarget "test111" */;
+			buildConfigurationList = 4F55A4352CFE309B00E1A8C4 /* Build configuration list for PBXNativeTarget "My Сollege" */;
 			buildPhases = (
 				4F55A41E2CFE309800E1A8C4 /* Sources */,
 				4F55A41F2CFE309800E1A8C4 /* Frameworks */,
 				4F55A4202CFE309800E1A8C4 /* Resources */,
+				4FB7862E2D05B0E5002A2393 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -76,11 +113,15 @@
 			fileSystemSynchronizedGroups = (
 				4F55A4242CFE309800E1A8C4 /* test111 */,
 			);
-			name = test111;
+			name = "My Сollege";
 			packageProductDependencies = (
+				4F55A45F2CFE4D4900E1A8C4 /* Lottie */,
+				4F55A4622CFE4D5E00E1A8C4 /* SwiftSoup */,
+				4FA316EF2D74B19300E1CE23 /* YandexMobileAds */,
+				4FA316F12D74B19300E1CE23 /* YandexMobileAdsInstream */,
 			);
 			productName = test111;
-			productReference = 4F55A4222CFE309800E1A8C4 /* test111.app */;
+			productReference = 4F55A4222CFE309800E1A8C4 /* My Сollege.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -98,21 +139,26 @@
 					};
 				};
 			};
-			buildConfigurationList = 4F55A41D2CFE309800E1A8C4 /* Build configuration list for PBXProject "test111" */;
-			developmentRegion = en;
+			buildConfigurationList = 4F55A41D2CFE309800E1A8C4 /* Build configuration list for PBXProject "My Сollege" */;
+			developmentRegion = ru;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				en,
 				Base,
+				ru,
 			);
 			mainGroup = 4F55A4192CFE309800E1A8C4;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				4F55A45E2CFE4D4900E1A8C4 /* XCRemoteSwiftPackageReference "lottie-ios" */,
+				4F55A4612CFE4D5E00E1A8C4 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
+				4FA316EE2D74B19300E1CE23 /* XCRemoteSwiftPackageReference "yandex-ads-sdk-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4F55A4232CFE309800E1A8C4 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				4F55A4212CFE309800E1A8C4 /* test111 */,
+				4F55A4212CFE309800E1A8C4 /* My Сollege */,
 			);
 		};
 /* End PBXProject section */
@@ -144,25 +190,28 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = DV5UPK2J87;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = test111/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Мой Колледж";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				IPHONEOS_DEPLOYMENT_TARGET = 13;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = tsep1l0v.test111;
+				MARKETING_VERSION = 1.1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tsep1l0v.myimsit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -172,25 +221,28 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = DV5UPK2J87;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = test111/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Мой Колледж";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
-				INFOPLIST_KEY_UIMainStoryboardFile = Main;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				IPHONEOS_DEPLOYMENT_TARGET = 13;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = tsep1l0v.test111;
+				MARKETING_VERSION = 1.1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tsep1l0v.myimsit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -199,6 +251,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -262,6 +315,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -316,7 +370,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		4F55A41D2CFE309800E1A8C4 /* Build configuration list for PBXProject "test111" */ = {
+		4F55A41D2CFE309800E1A8C4 /* Build configuration list for PBXProject "My Сollege" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4F55A4382CFE309B00E1A8C4 /* Debug */,
@@ -325,7 +379,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		4F55A4352CFE309B00E1A8C4 /* Build configuration list for PBXNativeTarget "test111" */ = {
+		4F55A4352CFE309B00E1A8C4 /* Build configuration list for PBXNativeTarget "My Сollege" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				4F55A4362CFE309B00E1A8C4 /* Debug */,
@@ -335,6 +389,56 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4F55A45E2CFE4D4900E1A8C4 /* XCRemoteSwiftPackageReference "lottie-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.5.0;
+			};
+		};
+		4F55A4612CFE4D5E00E1A8C4 /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/scinfu/SwiftSoup";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.7.6;
+			};
+		};
+		4FA316EE2D74B19300E1CE23 /* XCRemoteSwiftPackageReference "yandex-ads-sdk-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/yandexmobile/yandex-ads-sdk-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.10.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4F55A45F2CFE4D4900E1A8C4 /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4F55A45E2CFE4D4900E1A8C4 /* XCRemoteSwiftPackageReference "lottie-ios" */;
+			productName = Lottie;
+		};
+		4F55A4622CFE4D5E00E1A8C4 /* SwiftSoup */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4F55A4612CFE4D5E00E1A8C4 /* XCRemoteSwiftPackageReference "SwiftSoup" */;
+			productName = SwiftSoup;
+		};
+		4FA316EF2D74B19300E1CE23 /* YandexMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4FA316EE2D74B19300E1CE23 /* XCRemoteSwiftPackageReference "yandex-ads-sdk-ios" */;
+			productName = YandexMobileAds;
+		};
+		4FA316F12D74B19300E1CE23 /* YandexMobileAdsInstream */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4FA316EE2D74B19300E1CE23 /* XCRemoteSwiftPackageReference "yandex-ads-sdk-ios" */;
+			productName = YandexMobileAdsInstream;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 4F55A41A2CFE309800E1A8C4 /* Project object */;
 }

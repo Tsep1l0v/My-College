@@ -1,0 +1,96 @@
+{
+  "originHash" : "863ca93b6673c435a90814bd6794c9fd335d9a2786f5a89116a236397142ee9c",
+  "pins" : [
+    {
+      "identity" : "appmetrica-sdk-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/appmetrica/appmetrica-sdk-ios",
+      "state" : {
+        "revision" : "a23678a2e783b126c247b53b3e3b44f09a3d39c1",
+        "version" : "5.9.0"
+      }
+    },
+    {
+      "identity" : "divkit-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/divkit/divkit-ios.git",
+      "state" : {
+        "revision" : "baeae015110f46b326f414badc2062ba0578e5cc",
+        "version" : "30.33.0"
+      }
+    },
+    {
+      "identity" : "divkit-ios-facade",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/divkit/divkit-ios-facade",
+      "state" : {
+        "revision" : "1c0f0503f609b45666e8845211f65f5cfc1af611",
+        "version" : "4.5.0"
+      }
+    },
+    {
+      "identity" : "kscrash",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kstenerud/KSCrash",
+      "state" : {
+        "revision" : "e62b01179f951ffa6670af186b21f00657a92557",
+        "version" : "2.0.0-rc.8"
+      }
+    },
+    {
+      "identity" : "lottie-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/airbnb/lottie-ios.git",
+      "state" : {
+        "revision" : "fe4c6fe3a0aa66cdeb51d549623c82ca9704b9a5",
+        "version" : "4.5.0"
+      }
+    },
+    {
+      "identity" : "swift-cmark",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-cmark.git",
+      "state" : {
+        "revision" : "3ccff77b2dc5b96b77db3da0d68d28068593fa53",
+        "version" : "0.5.0"
+      }
+    },
+    {
+      "identity" : "swift-markdown",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-markdown.git",
+      "state" : {
+        "revision" : "8f79cb175981458a0a27e76cb42fee8e17b1a993",
+        "version" : "0.5.0"
+      }
+    },
+    {
+      "identity" : "swiftsoup",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/scinfu/SwiftSoup",
+      "state" : {
+        "revision" : "0837db354faf9c9deb710dc597046edaadf5360f",
+        "version" : "2.7.6"
+      }
+    },
+    {
+      "identity" : "vgsl",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/yandex/vgsl.git",
+      "state" : {
+        "revision" : "99587796f71d8fd7db963977738f79138f1c7d2c",
+        "version" : "6.23.2"
+      }
+    },
+    {
+      "identity" : "yandex-ads-sdk-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/yandexmobile/yandex-ads-sdk-ios",
+      "state" : {
+        "revision" : "be7ceed7762923fa4fb3442320673f1f366af027",
+        "version" : "7.10.2"
+      }
+    }
+  ],
+  "version" : 3
+}
