@@ -57,7 +57,7 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
             "Убедитесь, что вы выбрали группу для отображения расписания.",
             "Попробуйте еще раз нажать кнопку \"Выбрать\".",
             "Проверьте стабильность вашего интернет-соединения.",
-            "Возможно, есть временные проблемы с выводом расписания\n из сайта."
+            "Возможно, есть временные проблемы с выводом расписания\n из сайта imsit.ru."
         ]
 
         let attributedText = NSMutableAttributedString(string: mainText, attributes: [

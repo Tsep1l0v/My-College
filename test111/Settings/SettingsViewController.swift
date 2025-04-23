@@ -110,7 +110,7 @@ class SettingsViewController: UIViewController {
         }
 
         // Добавляем текст с @tsepilo_v
-        text.append(NSAttributedString(string: " @tsepilo_v"))
+        text.append(NSAttributedString(string: " @tsep1lov"))
 
         // Применяем атрибутированную строку к метке
         label.attributedText = text

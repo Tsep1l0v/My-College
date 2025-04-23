@@ -31,7 +31,7 @@ class AnimationViewController: UIViewController {
                textLabel.translatesAutoresizingMaskIntoConstraints = false
 
                let titleText = "Внимание!\n"
-               let mainText = "В приложении отображается расписание, которое загружается с сайта. Если в приложении расписание некорректное, это связано не с ошибкой приложения, а с данными, загруженными на сайт."
+               let mainText = "Расписание в приложении загружается с сайта imsit.ru. Если данные некорректны, проблема в информации на сайте, а не в приложении"
 
                let attributedText = NSMutableAttributedString(string: titleText, attributes: [
                    .font: UIFont.boldSystemFont(ofSize: 30),
