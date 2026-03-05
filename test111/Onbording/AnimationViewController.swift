@@ -13,7 +13,7 @@ class AnimationViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = .white
+        view.backgroundColor = .systemBackground
 
         // Добавьте анимацию Lottie
         let animationView = LottieAnimationView(name: "focus")
@@ -31,16 +31,16 @@ class AnimationViewController: UIViewController {
                textLabel.translatesAutoresizingMaskIntoConstraints = false
 
                let titleText = "Внимание!\n"
-               let mainText = "Расписание в приложении загружается с сайта imsit.ru. Если данные некорректны, проблема в информации на сайте, а не в приложении"
+               let mainText = "Расписание в приложении загружается с сайта. Если данные некорректны, проблема в информации на сайте, а не в приложении"
 
                let attributedText = NSMutableAttributedString(string: titleText, attributes: [
                    .font: UIFont.boldSystemFont(ofSize: 30),
-                   .foregroundColor: UIColor.black
+                   .foregroundColor: UIColor.label
                ])
 
                attributedText.append(NSAttributedString(string: mainText, attributes: [
                    .font: UIFont.systemFont(ofSize: 16),
-                   .foregroundColor: UIColor.black
+                   .foregroundColor: UIColor.label
                ]))
 
                textLabel.attributedText = attributedText

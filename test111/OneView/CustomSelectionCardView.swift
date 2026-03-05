@@ -17,10 +17,16 @@ class CustomSelectionCardView: UIView {
 
     init(title: String, iconName: String) {
         super.init(frame: .zero)
-        backgroundColor = UIColor.systemBackground
+        // Более светлая карточка в тёмной теме, нейтральная в светлой
+        if #available(iOS 13.0, *) {
+            backgroundColor = UIColor.secondarySystemBackground
+        } else {
+            backgroundColor = UIColor.white
+        }
         layer.cornerRadius = 15
         layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOpacity = 0.1
+        // Чуть мягче тень, чтобы на тёмном фоне не было "грязного" эффекта
+        layer.shadowOpacity = 0.15
         layer.shadowOffset = CGSize(width: 0, height: 4)
         layer.shadowRadius = 6
 
@@ -40,6 +46,8 @@ class CustomSelectionCardView: UIView {
         subtitleLabel.text = "Не выбрано"
         subtitleLabel.font = .systemFont(ofSize: 14)
         subtitleLabel.textColor = .systemGray
+        subtitleLabel.numberOfLines = 0 // Разрешаем многострочный текст
+        subtitleLabel.lineBreakMode = .byWordWrapping // Обрезаем по словам
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
 
         addSubview(iconImageView)

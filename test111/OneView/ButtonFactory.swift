@@ -15,7 +15,7 @@ func createButton(title: String, imageName: String) -> UIButton {
     btn.layer.cornerRadius = 12
     btn.tintColor = .white
     btn.setTitle(title, for: .normal)
-    btn.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+    btn.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .bold) // Увеличиваем размер шрифта
 
     if let originalImage = UIImage(named: imageName) {
         let resizedImage = UIGraphicsImageRenderer(size: CGSize(width: 30, height: 30)).image { _ in

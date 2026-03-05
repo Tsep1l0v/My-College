@@ -8,7 +8,7 @@
 import UIKit
 
 // MARK: - Модель данных
-struct DaySchedule {
+struct DaySchedule: Codable {
     let day: String
     let date: String
     let lessons: [Lesson]

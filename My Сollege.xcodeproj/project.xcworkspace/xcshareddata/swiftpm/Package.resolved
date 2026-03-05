@@ -1,5 +1,5 @@
 {
-  "originHash" : "863ca93b6673c435a90814bd6794c9fd335d9a2786f5a89116a236397142ee9c",
+  "originHash" : "0245a77e1f4197d23a6c68b3dd2d67c868de19041a9d9f0129302b88508aaee4",
   "pins" : [
     {
       "identity" : "appmetrica-sdk-ios",
@@ -44,6 +44,24 @@
       "state" : {
         "revision" : "fe4c6fe3a0aa66cdeb51d549623c82ca9704b9a5",
         "version" : "4.5.0"
+      }
+    },
+    {
+      "identity" : "mytracker-ios-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/myTrackerSDK/mytracker-ios-spm",
+      "state" : {
+        "revision" : "bbd0468cfa1a3b93aeab8f8304ece39141e1aeba",
+        "version" : "3.4.2"
+      }
+    },
+    {
+      "identity" : "rustore-remote-config-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://gitflic.ru/project/rustore/rustore-remote-config-swift.git",
+      "state" : {
+        "revision" : "7cb1d64454275b1382224d749e6a7eb0d7684cf7",
+        "version" : "1.0.0"
       }
     },
     {
