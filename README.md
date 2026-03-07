@@ -18,7 +18,7 @@
   - экран `TwoViewController` отображает расписание:
     - только на **сегодня** или сразу на **всю неделю** (опция в настройках),
     - с разбивкой по дням недели и парам;
-  - парсинг и формирование расписания с сервера через `ScheduleRepository` и модели `DaySchedule` / `Lesson`;
+  - загрузка и формирование расписания с сервера через `ScheduleRepository` / `ScheduleAPIClient` и модели `DaySchedule` / `Lesson`;
   - поддержка «выходных» дней с дружелюбным сообщением «Сегодня выходной. Наслаждайтесь отдыхом!».
 
 - **Уведомления о парах 🔔**
@@ -46,7 +46,7 @@
   - внизу — контакт разработчика в Telegram (`@tsep1lov`).
 
 - **Онбординг 👋**
-  - `OnboardingViewController` с анимацией и страницами знакомства с приложением;
+  - онбординг‑экраны с анимацией и страницами знакомства с приложением;
   - хранение флага `hasSeenOnboarding` в `UserDefaults`, чтобы онбординг показывался только один раз.
 
 - **Реклама и аналитика 📊**
@@ -57,48 +57,153 @@
 
 ### Технический стек 🛠
 
-- **Платформа**: iOS  
-- **Язык**: Swift  
+- **Платформа**: iOS 13.0+ (основное приложение), iOS 17.6+ (виджет расписания)  
+- **Язык**: Swift 5.0  
 - **UI‑фреймворк**: UIKit, Auto Layout (кодом)  
 - **Виджеты**: WidgetKit (`ScheduleWidgetExtension`)  
-- **Анимации**: Lottie (анимации ошибок и онбординга)  
+- **Архитектура**: модульное MVC / разбивка по экранам и фичам (`OneView`, `TwoView`, `Settings`, `TabBar` и др.)  
+- **Сетевой слой**: собственный REST‑клиент `ScheduleAPIClient` + репозиторий `ScheduleRepository` (кэш в памяти и в `UserDefaults`)  
 - **Парсинг HTML**: SwiftSoup  
+- **Локальное хранилище**: `UserDefaults`, App Group (`ScheduleStorage`)  
 - **Уведомления**: UserNotifications (`UNUserNotificationCenter`)  
-- **Реклама**: YandexMobileAds  
+- **Анимации**: Lottie (онбординг, состояния ошибок и пр.)  
+- **Реклама**: YandexMobileAds (баннеры и инстрим‑реклама)  
 - **Аналитика**: MyTrackerSDK  
+- **Remote Config**: RSRemoteConfig (удалённое управление включением рекламы, токеном и URL сервера расписания)  
 
 ---
 
-### Структура проекта (главные модули)
+### Окружение и версии 🔧
 
-- `test111/`
-  - `AppDelegate.swift`, `SceneDelegate.swift` — запуск приложения и конфигурация сцен.
-  - `OneView/` — выбор курса/специальности/группы (`ViewController`, парсеры групп и преподавателей).
-  - `TwoView/` — отображение расписания (`TwoViewController`, `LessonTableViewCell`, модели `DaySchedule`/`Lesson`).
-  - `Settings/` — экран настроек (`SettingsViewController`, `AboutViewController`).
-  - `Onbording/` — онбординг (`OnboardingViewController`, анимационные контроллеры).
-  - `Splash/` — стартовый экран со splash‑анимацией.
-  - `TabBar/` — главный контейнер с вкладками (`MainViewController`).
-  - `AdManager.swift`, `NotificationManager.swift`, `ScheduleStorage.swift`, `ThemeManager.swift`, `RemoteConfigService.swift` — вспомогательные сервисы.
-- `ScheduleWidgetExtension/`
-  - код виджета, `DaySchedule.swift`, `Lesson.swift`, `ScheduleStorage` для шаринга данных.
+**Инструменты сборки**
+
+- **Xcode**: 16.0+ (проект создан и последний раз мигрирован в Xcode 16, `LastUpgradeCheck = 1600`)  
+- **iOS SDK**: актуальный SDK из поставки Xcode 16 (проект собирался с iOS 18.0 SDK)  
+- **Целевые версии iOS (Deployment Target)**:
+  - **основное приложение**: iOS **13.0** (`IPHONEOS_DEPLOYMENT_TARGET = 13.0`);
+  - **виджет расписания**: iOS **17.6** (`IPHONEOS_DEPLOYMENT_TARGET = 17.6`).
+- **Swift compiler**: Swift **5.0** (`SWIFT_VERSION = 5.0`)  
+- **C/C++ компилятор**:
+  - C: стандарт **gnu17** (`GCC_C_LANGUAGE_STANDARD = gnu17`);
+  - C++: стандарт **gnu++20** (`CLANG_CXX_LANGUAGE_STANDARD = "gnu++20"`).
+
+**Swift Package Manager — зависимости и версии**  
+(зафиксированы в `My Сollege.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`)
+
+- **Lottie (`lottie-ios`)**: `4.5.0`  
+- **SwiftSoup (`swiftsoup`)**: `2.7.6`  
+- **Yandex Ads SDK (`yandex-ads-sdk-ios`, продукты `YandexMobileAds`, `YandexMobileAdsInstream`)**: `7.10.2`  
+- **MyTrackerSDK (`mytracker-ios-spm`)**: `3.4.2`  
+- **RSRemoteConfig (`rustore-remote-config-swift`)**: `1.0.0`  
+
+Дополнительные транзитивные зависимости (например, `swift-markdown`, `swift-cmark`, `KSCrash`, `vgsl`, `appmetrica-sdk-ios`, `divkit-ios`) подтягиваются автоматически через Swift Package Manager и не требуют ручной настройки.
 
 ---
 
-### Запуск проекта
+### Архитектура приложения 🧱
 
-- Откройте `My Сollege.xcodeproj` в Xcode.  
-- Убедитесь, что выбрана схема основного приложения (`test111`) и подходящий симулятор или физическое устройство.  
-- При необходимости установите и настройте зависимости (YandexMobileAds, MyTrackerSDK, Lottie, SwiftSoup) через Swift Package Manager или Cocoapods/другое решение, как в вашей локальной конфигурации.  
-- Соберите и запустите проект (`Cmd + R`).
+Проект имеет стандартную структуру iOS‑приложения на UIKit. Код разделён по директориям (feature‑sliced), отвечающим за пользовательский интерфейс, бизнес‑логику, работу с сетью и виджет.
+
+```text
+└── ./
+    ├── My Сollege.xcodeproj           # Xcode‑проект и настройки сборки
+    ├── README.md
+    ├── ScheduleWidgetExtension        # таргет виджета расписания (WidgetKit)
+    │   ├── Assets.xcassets
+    │   ├── DaySchedule.swift          # модель дня расписания для виджета
+    │   ├── Lesson.swift               # модель пары для виджета
+    │   ├── ScheduleStorage.swift      # общее хранилище (App Group)
+    │   ├── ScheduleWidgetExtension.swift
+    │   └── ScheduleWidgetExtensionBundle.swift
+    └── test111                        # код основного iOS‑приложения
+        ├── AppDelegate.swift          # точка входа приложения
+        ├── SceneDelegate.swift        # управление сценами (iOS 13+)
+        ├── Assetss                    # ресурсы и ассеты (иконки, лонч‑экран, анимации)
+        ├── OneView                    # выбор курса/группы/преподавателя
+        │   ├── ViewController.swift   # экран выбора группы
+        │   ├── TeacherViewController.swift  # экран выбора преподавателя
+        │   ├── GroupFetcher.swift     # фасад для запросов по группам
+        │   ├── GroupParser.swift      # парсер групп
+        │   ├── TeacherParser.swift    # парсер преподавателей
+        │   ├── TeacherParser*.swift   # вспомогательные тесты/утилиты парсинга
+        │   └── ButtonFactory.swift    # фабрика UI‑кнопок и карточек
+        ├── TwoView                    # экран расписания
+        │   ├── TwoViewController.swift
+        │   ├── LessonTableViewCell.swift
+        │   ├── DaySchedule.swift      # доменная модель дня расписания
+        │   └── Lesson.swift           # доменная модель пары
+        ├── Settings                   # экран настроек и "О приложении"
+        │   ├── SettingsViewController.swift
+        │   └── AboutViewController.swift
+        ├── Onbording                  # онбординг и анимации первого запуска
+        │   ├── Onboording.swift
+        │   ├── AnimationViewController.swift
+        │   └── ModeSwitchAnimationViewController.swift
+        ├── Splash                     # стартовый экран
+        │   └── SplashViewController.swift
+        ├── TabBar                     # корневой контейнер с вкладками
+        │   └── MainViewController.swift
+        ├── ScheduleWidget             # вспомогательный код для виджета внутри приложения
+        ├── Base.lproj / Info.plist    # сториборды лонч‑экрана и настройки бандла
+        ├── AdManager.swift            # работа с рекламой (YandexMobileAds)
+        ├── NotificationManager.swift  # локальные уведомления о парах
+        ├── ScheduleStorage.swift      # общее хранилище расписания (приложение + виджет)
+        ├── ThemeManager.swift         # управление темой оформления
+        ├── RemoteConfigService.swift  # RSRemoteConfig / RuStore Remote Config
+        ├── AppUpdateChecker.swift     # проверка доступности обновлений
+        └── WidgetInfoViewController.swift  # экран с информацией о виджетах
+```
+
+Логически код разделён на:
+- **слой презентации (UI)** — контроллеры экранов (`OneView`, `TwoView`, `Settings`, `Onbording`, `Splash`, `TabBar`, `WidgetInfoViewController`) и ячейки/вью;
+- **слой данных** — `ScheduleAPIClient`, `ScheduleRepository`, модели `DaySchedule` / `Lesson` и структуры ответов API;
+- **сервисы и инфраструктуру** — уведомления (`NotificationManager`), реклама (`AdManager`), удалённая конфигурация (`RemoteConfigService`), хранилище (`ScheduleStorage`), тема (`ThemeManager`), проверка обновлений (`AppUpdateChecker`);
+- **виджет** — отдельный таргет `ScheduleWidgetExtension` на WidgetKit, переиспользующий общие модели и хранилище.
+
+---
+
+### Инструкция по сборке и запуску 🧪
+
+1. **Установите инструменты**
+   - Xcode **16.0+** (из App Store или с сайта Apple).
+   - Убедитесь, что установлен iOS SDK (идёт в комплекте с Xcode).
+
+2. **Клонируйте репозиторий**
+   - Склонируйте проект в удобную директорию:
+     - `git clone <URL-репозитория>`
+
+3. **Откройте проект**
+   - Откройте файл `My Сollege.xcodeproj` в Xcode.  
+   - Дождитесь, пока **Swift Package Manager** загрузит и проиндексирует зависимости (Lottie, SwiftSoup, YandexMobileAds, MyTrackerSDK, RSRemoteConfig и др.).
+
+4. **Настройте подпись (Signing) при необходимости**
+   - В разделе **Signing & Capabilities** для таргета `My Сollege` выберите свою команду разработчика (Team).
+   - При необходимости измените `Bundle Identifier`, чтобы он не конфликтовал с уже установленным приложением.
+
+5. **Выберите схему и устройство**
+   - Схема: **`My Сollege`** (основное приложение).  
+   - Устройство:
+     - симулятор iPhone с iOS 13+ или
+     - реальное устройство с установленным профилем разработчика.
+
+6. **Соберите и запустите**
+   - Нажмите **`Cmd + R`** или кнопку **Run** в Xcode.
+   - После первого запуска выберите группу/режим и разрешите отправку уведомлений (если нужно).
+
+7. **Сборка и тестирование виджета**
+   - Выберите схему **`ScheduleWidgetExtensionExtension`**.
+   - Устройство: iPhone с iOS **17.6+**.
+   - Соберите таргет; виджет появится в галерее виджетов после установки приложения.
+
+Приложение будет корректно работать даже без активного RSRemoteConfig: в этом случае используются дефолтные/закешированные значения (реклама включена, сервер расписания берётся из локальных настроек).
 
 ---
 
 ### Скриншоты
+
 <img width="1290" height="2796" alt="Frame 2" src="https://github.com/user-attachments/assets/a47d0730-78a5-404b-92ae-d5099faf004d" />
 <img width="1290" height="2796" alt="Frame 3" src="https://github.com/user-attachments/assets/f8243b2d-1056-46e3-aeb8-fa12a989df78" />
 <img width="1290" height="2796" alt="Frame 4" src="https://github.com/user-attachments/assets/34ec33c2-f938-4565-863f-7f023a45f6fa" />
-
 
 ---
 
@@ -107,5 +212,4 @@
 - **Разработчик**: @tsep1lov (Telegram)  
 - Буду рад баг‑репортам, предложениям по улучшению и идеям для новых функций.
 
- 
-
+© Исходный код защищен авторским правом в Федеральной службе по интеллектуальной собственности Российской Федерации
