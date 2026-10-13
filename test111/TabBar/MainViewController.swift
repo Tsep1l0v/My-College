@@ -162,6 +162,8 @@ class MainViewController: UIViewController, GroupSelectionDelegate, TeacherSelec
             if secondVC.selectedGroupURL != url {
                 secondVC.fullSchedule = []
                 secondVC.schedule = []
+                UserDefaults.standard.removeObject(forKey: "correspondenceSelectedISODate")
+                UserDefaults.standard.set(false, forKey: "correspondenceModeActive")
             }
             
             // Теперь сюда приходит имя группы

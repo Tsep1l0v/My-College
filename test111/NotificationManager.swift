@@ -79,46 +79,107 @@ class NotificationManager {
         let now = Date()
         let today = calendar.startOfDay(for: now)
         var scheduledCount = 0
-        
+
+        // Заочное/сессионное расписание: дни имеют isoDate → планируем строго по календарным датам,
+        // иначе уведомления будут "съезжать" и попадать на другие предметы.
+        if schedule.contains(where: { $0.isoDate != nil }) {
+            let iso = Self.isoDateFormatter
+            var candidates: [(notifDate: Date, dayDate: Date, lesson: Lesson)] = []
+            for day in schedule {
+                guard let isoDate = day.isoDate,
+                      let dayDate = iso.date(from: isoDate) else { continue }
+                let dayStart = calendar.startOfDay(for: dayDate)
+                if dayStart < today { continue }
+                for lesson in day.lessons {
+                    if lesson.time.isEmpty { continue }
+                    if lesson.subject == "Сегодня выходной. Наслаждайтесь отдыхом!" { continue }
+                    if lesson.subject.isEmpty { continue }
+
+                    guard let lessonStart = buildStartDate(on: dayStart, time: lesson.time),
+                          let notifDate = calendar.date(byAdding: .minute, value: -notificationTimeMinutes, to: lessonStart),
+                          notifDate > now else { continue }
+                    candidates.append((notifDate: notifDate, dayDate: dayStart, lesson: lesson))
+                }
+            }
+
+            // iOS ограничивает количество pending notifications (обычно 64).
+            candidates.sort { $0.notifDate < $1.notifDate }
+            let limited = candidates.prefix(64)
+
+            for item in limited {
+                let content = UNMutableNotificationContent()
+                content.title = "Напоминание о паре"
+                content.body = "До начала пары \"\(item.lesson.subject)\" осталось \(notificationTimeMinutes) \(getMinutesText(notificationTimeMinutes))"
+                content.sound = .default
+
+                let idFormatter = DateFormatter()
+                idFormatter.dateFormat = "yyyyMMdd"
+                let datePart = idFormatter.string(from: item.dayDate)
+                let timeSanitized = item.lesson.time
+                    .replacingOccurrences(of: ":", with: "_")
+                    .replacingOccurrences(of: ".", with: "_")
+                    .replacingOccurrences(of: "-", with: "_")
+                let identifier = "lesson_\(datePart)_\(item.lesson.number)_\(timeSanitized)"
+
+                let triggerComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: item.notifDate)
+                let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
+                let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+
+                UNUserNotificationCenter.current().add(request) { error in
+                    if let error = error {
+                        print("❌ Ошибка планирования уведомления: \(error.localizedDescription)")
+                    }
+                }
+                scheduledCount += 1
+            }
+
+            print("✅ Запланировано \(scheduledCount) уведомлений (сессионный режим)")
+            return
+        }
+
+        // Обычное недельное расписание (пн-вс)
         // Считаем, сколько дней осталось до субботы текущей недели (1 = вс, 7 = сб)
         let weekday = calendar.component(.weekday, from: today)
         let daysToSaturday = max(0, 7 - weekday)
-        
+
         // Планируем с сегодня и до субботы включительно
         for dayOffset in 0...daysToSaturday {
             guard let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: today) else { continue }
-            
+
             // 1 = воскресенье, 2 = понедельник ... 7 = суббота
             let targetWeekday = calendar.component(.weekday, from: targetDate)
             let scheduleIndex = (targetWeekday == 1) ? 6 : targetWeekday - 2
-            
+
             guard schedule.indices.contains(scheduleIndex) else { continue }
             let daySchedule = schedule[scheduleIndex]
-            
+
             for lesson in daySchedule.lessons {
                 // Пропускаем пустые уроки и выходные
                 if lesson.time.isEmpty { continue }
                 if lesson.subject == "Сегодня выходной. Наслаждайтесь отдыхом!" { continue }
                 if lesson.subject.isEmpty { continue }
-                
+
                 guard let lessonStart = buildStartDate(on: targetDate, time: lesson.time) else { continue }
                 guard let notifDate = calendar.date(byAdding: .minute, value: -notificationTimeMinutes, to: lessonStart), notifDate > now else { continue }
-                
+
                 let content = UNMutableNotificationContent()
                 content.title = "Напоминание о паре"
                 content.body = "До начала пары \"\(lesson.subject)\" осталось \(notificationTimeMinutes) \(getMinutesText(notificationTimeMinutes))"
                 content.sound = .default
-                
+
                 let idFormatter = DateFormatter()
                 idFormatter.dateFormat = "yyyyMMdd"
                 let datePart = idFormatter.string(from: targetDate)
-                let timeSanitized = lesson.time.replacingOccurrences(of: ":", with: "_").replacingOccurrences(of: "-", with: "_")
+                let timeSanitized = lesson.time
+                    .replacingOccurrences(of: ":", with: "_")
+                    .replacingOccurrences(of: ".", with: "_")
+                    .replacingOccurrences(of: "-", with: "_")
                 let identifier = "lesson_\(datePart)_\(lesson.number)_\(timeSanitized)"
-                
+
                 let triggerComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: notifDate)
                 let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
                 let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
-                
+
                 UNUserNotificationCenter.current().add(request) { error in
                     if let error = error {
                         print("❌ Ошибка планирования уведомления: \(error.localizedDescription)")
@@ -127,7 +188,7 @@ class NotificationManager {
                 scheduledCount += 1
             }
         }
-        
+
         print("✅ Запланировано \(scheduledCount) уведомлений до конца текущей недели (включая субботу)")
     }
     
@@ -221,7 +282,9 @@ class NotificationManager {
     private func buildStartDate(on date: Date, time: String) -> Date? {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "HH:mm"
-        guard let startPart = time.split(separator: "-").first,
+        // API может отдавать "13.10-14.40" → нормализуем в "13:10-14:40"
+        let normalized = time.replacingOccurrences(of: ".", with: ":")
+        guard let startPart = normalized.split(separator: "-").first,
               let startDateOnlyTime = dateFormatter.date(from: String(startPart)) else { return nil }
         
         let calendar = Calendar.current
@@ -234,6 +297,15 @@ class NotificationManager {
         comps.minute = calendar.component(.minute, from: startDateOnlyTime)
         return calendar.date(from: comps)
     }
+
+    private static let isoDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone.current
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
     
     // Принудительное обновление уведомлений на всю неделю (для Background Fetch)
     func forceRescheduleNotificationsForWeek(schedule: [DaySchedule], isTeacherMode: Bool = false) {

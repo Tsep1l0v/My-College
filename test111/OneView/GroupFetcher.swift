@@ -82,7 +82,7 @@ final class ScheduleRepository {
     }
 
     func getGroupSchedule(groupName: String, weekCount: Int, completion: @escaping (Result<[APIScheduleItem], Error>) -> Void) {
-        let key = cacheKey("groups/schedule", ["group": groupName, "weekCount": String(weekCount)])
+        let key = cacheKey("groups/schedule", ["group": groupName, "weekCount": String(weekCount), "date": "full"])
         if isValid(key: key), let data = memoryCache[key], let items = try? JSONDecoder().decode(APIScheduleResponse.self, from: data) {
             MRMyTracker.trackEvent(name: "Фоновый процесс загрузки расписания группы из сервера")
             completion(.success(items.schedule))
@@ -94,7 +94,7 @@ final class ScheduleRepository {
             return
         }
         MRMyTracker.trackEvent(name: "Получить расписание группы из сервера")
-        ScheduleAPIClient.shared.groupSchedule(groupName: groupName, dayWeek: nil, weekCount: weekCount) { result in
+        ScheduleAPIClient.shared.groupSchedule(groupName: groupName, dayWeek: nil, weekCount: weekCount, date: "full") { result in
             switch result {
             case .success(let schedule):
                 if let data = try? JSONEncoder().encode(APIScheduleResponse(schedule: schedule)) {
@@ -290,11 +290,12 @@ final class ScheduleRepository {
         }
     }
     
-    func groupSchedule(groupName: String, dayWeek: String?, weekCount: Int, completion: @escaping (Result<[APIScheduleItem], Error>) -> Void) {
+    func groupSchedule(groupName: String, dayWeek: String?, weekCount: Int, date: String = "full", completion: @escaping (Result<[APIScheduleItem], Error>) -> Void) {
         let params = [
             "group": groupName,
             "dayWeek": dayWeek ?? "",
-            "weekCount": String(weekCount)
+            "weekCount": String(weekCount),
+            "date": date
         ].filter { !$0.value.isEmpty }
         let key = cacheKey("groups/schedule", params)
         
@@ -306,7 +307,7 @@ final class ScheduleRepository {
             completion(.success(schedule.schedule))
             return
         }
-        ScheduleAPIClient.shared.groupSchedule(groupName: groupName, dayWeek: dayWeek, weekCount: weekCount) { result in
+        ScheduleAPIClient.shared.groupSchedule(groupName: groupName, dayWeek: dayWeek, weekCount: weekCount, date: date) { result in
             switch result {
             case .success(let schedule):
                 if let data = try? JSONEncoder().encode(APIScheduleResponse(schedule: schedule)) {

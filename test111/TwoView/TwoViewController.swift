@@ -10,15 +10,42 @@ import MyTrackerSDK
 import WidgetKit
 #endif
 
-class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, CorrespondenceScheduleHeaderViewDelegate {
 
     var tableView: UITableView!
     var schedule: [DaySchedule] = [] // Сюда будет сохраняться расписание для отображения
     var fullSchedule: [DaySchedule] = [] // Хранит полное расписание на неделю
-    var selectedGroupURL: String?
+    var selectedGroupURL: String? {
+        didSet {
+            if let old = oldValue, old != selectedGroupURL {
+                UserDefaults.standard.removeObject(forKey: Self.correspondenceSelectedDateKey)
+                UserDefaults.standard.set(false, forKey: Self.correspondenceModeActiveKey)
+            }
+        }
+    }
     var errorLabel: UILabel!
     var animationView: LottieAnimationView!
     var navigationBar: UINavigationBar!
+
+    private let correspondenceHeaderContainer = UIView()
+    private let correspondenceHeaderView = CorrespondenceScheduleHeaderView()
+    private var correspondenceHeaderHeightConstraint: NSLayoutConstraint!
+    private var correspondenceHeaderTopConstraint: NSLayoutConstraint!
+    private var tableViewTopToHeaderConstraint: NSLayoutConstraint!
+    private var tableViewTopToSafeConstraint: NSLayoutConstraint!
+
+    private static let correspondenceSelectedDateKey = "correspondenceSelectedISODate"
+    private static let correspondenceModeActiveKey = "correspondenceModeActive"
+    private static let correspondenceAutoSelectDayKey = "correspondenceAutoSelectDayISO"
+
+    private static let isoDateParser: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone.current
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -38,13 +65,31 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 150
 
+        correspondenceHeaderContainer.translatesAutoresizingMaskIntoConstraints = false
+        correspondenceHeaderView.translatesAutoresizingMaskIntoConstraints = false
+        correspondenceHeaderView.delegate = self
+        correspondenceHeaderContainer.addSubview(correspondenceHeaderView)
+        view.addSubview(correspondenceHeaderContainer)
         view.addSubview(tableView)
 
-        // Измените значение константы на величину, на которую хотите поднять таблицу
-        let topOffset: CGFloat = 0 // Поднимаем таблицу на 0 пикселей
+        correspondenceHeaderTopConstraint = correspondenceHeaderContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 0)
+        correspondenceHeaderHeightConstraint = correspondenceHeaderContainer.heightAnchor.constraint(equalToConstant: 0)
+
+        tableViewTopToHeaderConstraint = tableView.topAnchor.constraint(equalTo: correspondenceHeaderContainer.bottomAnchor, constant: 32)
+        tableViewTopToSafeConstraint = tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 0)
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.topAnchor, constant: topOffset),
+            correspondenceHeaderTopConstraint,
+            correspondenceHeaderHeightConstraint,
+            correspondenceHeaderContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            correspondenceHeaderContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+
+            correspondenceHeaderView.topAnchor.constraint(equalTo: correspondenceHeaderContainer.topAnchor),
+            correspondenceHeaderView.leadingAnchor.constraint(equalTo: correspondenceHeaderContainer.leadingAnchor),
+            correspondenceHeaderView.trailingAnchor.constraint(equalTo: correspondenceHeaderContainer.trailingAnchor),
+            correspondenceHeaderView.bottomAnchor.constraint(equalTo: correspondenceHeaderContainer.bottomAnchor),
+
+            tableViewTopToHeaderConstraint,
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
@@ -192,7 +237,13 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
         if let cached = ScheduleStorage.loadSchedule(), !cached.isEmpty {
             // Если кеш найден и соответствует текущему режиму и группе, используем его
             print("📦 Используем закешированное расписание из ScheduleStorage")
-            fullSchedule = cached
+            // Защита: если вдруг в кэше лежит заочное расписание (с isoDate), но текущая группа НЕ заочная —
+            // не используем этот кэш, иначе заочная панель будет показываться всем.
+            if !isCorrespondenceGroupLevel(), cached.contains(where: { $0.isoDate != nil }) {
+                print("⚠️ Игнорируем кэш сессии для не-заочной группы")
+            } else {
+                fullSchedule = cached
+            }
         } else if fullSchedule.isEmpty {
             // Если кеш не найден и fullSchedule пустой, пробуем загрузить с сервера
             // Но только если выбрана группа
@@ -243,10 +294,11 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
                 case .success(let week):
                     let isOdd = (week == 1)
                     UserDefaults.standard.set(isOdd, forKey: "isOddWeek")
-                    ScheduleRepository.shared.getGroupSchedule(groupName: groupName, weekCount: week) { result in
+                    let weekParam = self.isCorrespondenceGroupLevel() ? 1 : week
+                    ScheduleRepository.shared.getGroupSchedule(groupName: groupName, weekCount: weekParam) { result in
                         switch result {
                         case .success(let items):
-                            let weekSchedule = self.mapAPIScheduleToWeek(items)
+                            let weekSchedule = self.mapItemsToDaySchedules(items)
                             DispatchQueue.main.async {
                                 self.fullSchedule = weekSchedule
                                 self.updateTableViewBasedOnSettings()
@@ -261,11 +313,11 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
                 case .failure:
                     // Фоллбэк к локальной настройке недели
                     let isOdd = UserDefaults.standard.bool(forKey: "isOddWeek")
-                    let weekLocal = isOdd ? 1 : 2
+                    let weekLocal = self.isCorrespondenceGroupLevel() ? 1 : (isOdd ? 1 : 2)
                     ScheduleRepository.shared.getGroupSchedule(groupName: groupName, weekCount: weekLocal) { result in
                         switch result {
                         case .success(let items):
-                            let weekSchedule = self.mapAPIScheduleToWeek(items)
+                            let weekSchedule = self.mapItemsToDaySchedules(items)
                             DispatchQueue.main.async {
                                 self.fullSchedule = weekSchedule
                                 self.updateTableViewBasedOnSettings()
@@ -282,11 +334,11 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
         } else {
             // Используем локальную настройку четности недели (isOddWeek: true -> 1, false -> 2)
             let isOdd = UserDefaults.standard.bool(forKey: "isOddWeek")
-            let week = isOdd ? 1 : 2
+            let week = self.isCorrespondenceGroupLevel() ? 1 : (isOdd ? 1 : 2)
             ScheduleRepository.shared.getGroupSchedule(groupName: groupName, weekCount: week) { result in
                 switch result {
                 case .success(let items):
-                    let weekSchedule = self.mapAPIScheduleToWeek(items)
+                    let weekSchedule = self.mapItemsToDaySchedules(items)
                     DispatchQueue.main.async {
                         self.fullSchedule = weekSchedule
                         self.updateTableViewBasedOnSettings()
@@ -303,6 +355,8 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
 
     func showError() {
         DispatchQueue.main.async {
+            self.correspondenceHeaderHeightConstraint?.constant = 0
+            self.correspondenceHeaderTopConstraint?.constant = 0
             self.errorLabel.isHidden = false
             self.animationView.isHidden = false
             self.animationView.play()
@@ -310,10 +364,85 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
         }
     }
 
+    private func isCorrespondenceGroupLevel() -> Bool {
+        let level = UserDefaults.standard.string(forKey: "selectedGroupLevel") ?? ""
+        return level.lowercased().contains("заочн")
+    }
+
+    private var usesCorrespondenceSessionUI: Bool {
+        // Панель показываем по факту "датированного" расписания (сессия/заочка): есть isoDate у дней.
+        // Это гарантирует, что на обычных группах панель не появится, даже если есть кэш.
+        fullSchedule.contains { $0.isoDate != nil }
+    }
+
     func updateTableViewBasedOnSettings() {
+        if usesCorrespondenceSessionUI {
+            UserDefaults.standard.set(true, forKey: Self.correspondenceModeActiveKey)
+            correspondenceHeaderTopConstraint.constant = 40
+            correspondenceHeaderHeightConstraint.constant = 186
+            correspondenceHeaderContainer.isHidden = false
+            correspondenceHeaderView.isHidden = false
+            tableViewTopToSafeConstraint.isActive = false
+            tableViewTopToHeaderConstraint.isActive = true
+            MRMyTracker.trackEvent(name: "Открыть расписание заочной группы (сессия)")
+
+            let dataDates = Set(fullSchedule.compactMap { $0.isoDate })
+            var chosen = UserDefaults.standard.string(forKey: Self.correspondenceSelectedDateKey)
+            // Требование: при ПЕРВОМ заходе в новый день выбираем текущий день (как зелёный индикатор),
+            // но внутри дня пользователь может переключаться по датам — и выбор сохраняется.
+            let todayISO = Self.isoDateParser.string(from: Date())
+            let autoDay = UserDefaults.standard.string(forKey: Self.correspondenceAutoSelectDayKey)
+            if autoDay != todayISO {
+                UserDefaults.standard.set(todayISO, forKey: Self.correspondenceAutoSelectDayKey)
+                chosen = todayISO
+                UserDefaults.standard.set(todayISO, forKey: Self.correspondenceSelectedDateKey)
+            } else if chosen == nil || (chosen?.isEmpty ?? true) {
+                chosen = todayISO
+                UserDefaults.standard.set(todayISO, forKey: Self.correspondenceSelectedDateKey)
+            }
+
+            if let iso = chosen, let date = Self.isoDateParser.date(from: iso) {
+                correspondenceHeaderView.configure(selectedDate: date, datesWithData: dataDates)
+            }
+
+            if let iso = chosen, let day = fullSchedule.first(where: { $0.isoDate == iso }) {
+                schedule = [day]
+            } else if let iso = chosen, let date = Self.isoDateParser.date(from: iso) {
+                schedule = [makeCorrespondencePlaceholderDay(iso: iso, date: date)]
+            } else {
+                schedule = []
+            }
+
+            print("Расписание для отображения (заочное): \(schedule.count) дней")
+
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+                if self.schedule.isEmpty {
+                    print("Расписание пустое, показываем ошибку")
+                    self.showError()
+                } else {
+                    print("Расписание загружено успешно, скрываем ошибку")
+                    self.errorLabel.isHidden = true
+                    self.animationView.isHidden = true
+                    self.animationView.stop()
+                    self.tableView.isHidden = false
+                    self.scheduleNotifications()
+                }
+            }
+            return
+        }
+
+        UserDefaults.standard.set(false, forKey: Self.correspondenceModeActiveKey)
+        correspondenceHeaderTopConstraint.constant = 0
+        correspondenceHeaderHeightConstraint.constant = 0
+        correspondenceHeaderContainer.isHidden = true
+        correspondenceHeaderView.isHidden = true
+        tableViewTopToHeaderConstraint.isActive = false
+        tableViewTopToSafeConstraint.isActive = true
+
         let isFullScheduleEnabled = UserDefaults.standard.bool(forKey: "showFullSchedule")
         print("Настройка отображения: \(isFullScheduleEnabled ? "полное расписание" : "только сегодня")")
-        
+
         if isFullScheduleEnabled {
             schedule = fullSchedule // Показываем расписание на всю неделю
             MRMyTracker.trackEvent(name: "Открыть расписание группы на неделю")
@@ -336,11 +465,45 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
                 self.animationView.isHidden = true
                 self.animationView.stop()
                 self.tableView.isHidden = false
-                
+
                 // Планируем уведомления для загруженного расписания
                 self.scheduleNotifications()
             }
         }
+    }
+
+    private func defaultCorrespondenceISO(in dates: Set<String>) -> String? {
+        guard !dates.isEmpty else { return nil }
+        let sorted = dates.sorted()
+        let today = Self.isoDateParser.string(from: Date())
+        if dates.contains(today) { return today }
+        return sorted.first
+    }
+
+    /// Воскресенье или день без пар — та же анимация «выходной», что и на очном расписании.
+    private func makeCorrespondencePlaceholderDay(iso: String, date: Date) -> DaySchedule {
+        let dayFmt = DateFormatter()
+        dayFmt.locale = Locale(identifier: "ru_RU")
+        dayFmt.dateFormat = "EEEE"
+        var dayTitle = dayFmt.string(from: date)
+        if let first = dayTitle.first {
+            dayTitle = String(first).uppercased() + dayTitle.dropFirst()
+        }
+        let dateFmt = DateFormatter()
+        dateFmt.locale = Locale(identifier: "ru_RU")
+        dateFmt.dateFormat = "d MMMM"
+        let dateTitle = dateFmt.string(from: date)
+        let placeholder = Lesson(
+            number: 0,
+            time: "",
+            subject: "Сегодня выходной. Наслаждайтесь отдыхом!",
+            teacher: "",
+            room: "",
+            type: "",
+            color: .systemGray,
+            eiosLink: nil
+        )
+        return DaySchedule(day: dayTitle, date: dateTitle, lessons: [placeholder], isoDate: iso)
     }
     
     private func scheduleNotifications() {
@@ -630,7 +793,7 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
                 guard let leftDate = startTimeDate(from: lhs.timePeriod),
                       let rightDate = startTimeDate(from: rhs.timePeriod) else {
                     // Если не удаётся распарсить время, сравниваем как строки
-                    return lhs.timePeriod < rhs.timePeriod
+                    return lhs.timePeriodNormalized < rhs.timePeriodNormalized
                 }
                 return leftDate < rightDate
             }
@@ -640,7 +803,7 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
                 let teacherLabel = it.teacher?.label ?? ""
                 return Lesson(
                     number: number,
-                    time: it.timePeriod,
+                    time: it.timePeriodNormalized,
                     subject: it.lessonName,
                     teacher: teacherLabel,
                     room: it.auditory ?? "",
@@ -653,16 +816,77 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
         }
         return result
     }
-    
-    /// Возвращает дату, построенную только из времени начала интервала вида "HH:mm-HH:mm"
+
+    private func mapItemsToDaySchedules(_ items: [APIScheduleItem]) -> [DaySchedule] {
+        let hasCalendarDates = items.contains { !($0.lessonDate ?? "").isEmpty }
+        let correspondenceByAPI = items.contains { $0.group.isCorrespondenceStudyForm }
+        if hasCalendarDates && (isCorrespondenceGroupLevel() || correspondenceByAPI) {
+            return mapAPIScheduleToSession(items)
+        }
+        return mapAPIScheduleToWeek(items)
+    }
+
+    /// Расписание сессии (заочное): группировка по `lessonDate` с бэкенда (yyyy-MM-dd).
+    private func mapAPIScheduleToSession(_ items: [APIScheduleItem]) -> [DaySchedule] {
+        let dated = items.filter { !($0.lessonDate ?? "").isEmpty }
+        if dated.isEmpty { return mapAPIScheduleToWeek(items) }
+
+        let grouped = Dictionary(grouping: dated) { $0.lessonDate! }
+        let sortedKeys = grouped.keys.sorted()
+
+        let dayFmt = DateFormatter()
+        dayFmt.locale = Locale(identifier: "ru_RU")
+        dayFmt.dateFormat = "EEEE"
+
+        let dateFmt = DateFormatter()
+        dateFmt.locale = Locale(identifier: "ru_RU")
+        dateFmt.dateFormat = "d MMMM"
+
+        return sortedKeys.compactMap { key -> DaySchedule? in
+            guard let dateObj = Self.isoDateParser.date(from: key) else { return nil }
+            var dayTitle = dayFmt.string(from: dateObj)
+            if let first = dayTitle.first {
+                dayTitle = String(first).uppercased() + dayTitle.dropFirst()
+            }
+            let dateTitle = dateFmt.string(from: dateObj)
+
+            let dayItems = grouped[key] ?? []
+            let sortedItems: [APIScheduleItem] = dayItems.sorted { lhs, rhs in
+                guard let leftDate = startTimeDate(from: lhs.timePeriod),
+                      let rightDate = startTimeDate(from: rhs.timePeriod) else {
+                    return lhs.timePeriodNormalized < rhs.timePeriodNormalized
+                }
+                return leftDate < rightDate
+            }
+
+            let lessons: [Lesson] = sortedItems.enumerated().map { (index, it) in
+                let number = index + 1
+                let teacherLabel = it.teacher?.label ?? ""
+                return Lesson(
+                    number: number,
+                    time: it.timePeriodNormalized,
+                    subject: it.lessonName,
+                    teacher: teacherLabel,
+                    room: it.auditory ?? "",
+                    type: it.lessonType,
+                    color: getColor(for: number),
+                    eiosLink: it.eiosLink
+                )
+            }
+            return DaySchedule(day: dayTitle, date: dateTitle, lessons: lessons, isoDate: key)
+        }
+    }
+
+    /// Возвращает дату, построенную только из времени начала интервала вида "HH:mm-HH:mm" (API может отдать "13.10-14.40").
     private func startTimeDate(from timePeriod: String) -> Date? {
-        let components = timePeriod.split(separator: "-")
+        let normalized = APIScheduleItem.normalizeDottedTimePeriod(timePeriod)
+        let components = normalized.split(separator: "-")
         guard let startComponent = components.first else { return nil }
-        
+
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         formatter.locale = Locale(identifier: "ru_RU")
-        
+
         return formatter.date(from: String(startComponent))
     }
 
@@ -753,6 +977,7 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
     }
 
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        if usesCorrespondenceSessionUI { return nil }
         guard section < schedule.count else { return nil }
         let daySchedule = schedule[section]
         return daySchedule.day
@@ -777,11 +1002,13 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
 
         // Проверяем, является ли урок фиктивным (аналогичным воскресенью)
         let isPlaceholder = lesson.subject == "Сегодня выходной. Наслаждайтесь отдыхом!"
+            || lesson.subject == "На эту дату занятий нет."
         cell.configure(with: lesson, isPlaceholder: isPlaceholder)
         return cell
     }
 
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        if usesCorrespondenceSessionUI { return nil }
         guard section < schedule.count else { return nil }
         // Создаем кастомный view для заголовка
         let headerView = UIView()
@@ -809,6 +1036,10 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
         return headerView
     }
 
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        usesCorrespondenceSessionUI ? 0.01 : UITableView.automaticDimension
+    }
+
     // MARK: - UITableViewDelegate
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         guard indexPath.section < schedule.count,
@@ -819,7 +1050,8 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
         let lesson = schedule[indexPath.section].lessons[indexPath.row]
         
         // Для placeholder ячеек (выходной день) используем фиксированную высоту
-        if lesson.subject == "Сегодня выходной. Наслаждайтесь отдыхом!" {
+        if lesson.subject == "Сегодня выходной. Наслаждайтесь отдыхом!"
+            || lesson.subject == "На эту дату занятий нет." {
             return 150 // Увеличенная высота для анимации
         }
         
@@ -828,5 +1060,30 @@ class TwoViewController: UIViewController, UITableViewDataSource, UITableViewDel
     }
 }
 
+// MARK: - CorrespondenceScheduleHeaderViewDelegate
+extension TwoViewController {
+    func correspondenceScheduleHeader(_ view: CorrespondenceScheduleHeaderView, didSelectCalendarDay date: Date) {
+        let iso = Self.isoDateParser.string(from: date)
+        UserDefaults.standard.set(iso, forKey: Self.correspondenceSelectedDateKey)
+        updateTableViewBasedOnSettings()
+    }
 
+    func correspondenceScheduleHeaderDidTapCalendarButton(_ view: CorrespondenceScheduleHeaderView) {
+        let sorted = fullSchedule.compactMap { $0.isoDate }.sorted()
+        guard !sorted.isEmpty else { return }
+        let picker = CorrespondenceDatePickerViewController()
+        picker.isoDates = sorted
+        picker.selectedISO = UserDefaults.standard.string(forKey: Self.correspondenceSelectedDateKey)
+        picker.onPick = { [weak self] iso in
+            UserDefaults.standard.set(iso, forKey: Self.correspondenceSelectedDateKey)
+            self?.updateTableViewBasedOnSettings()
+        }
+        let nav = UINavigationController(rootViewController: picker)
+        nav.modalPresentationStyle = .pageSheet
+        if #available(iOS 15.0, *) {
+            nav.sheetPresentationController?.detents = [.medium(), .large()]
+        }
+        present(nav, animated: true)
+    }
+}
 

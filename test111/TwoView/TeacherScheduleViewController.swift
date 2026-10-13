@@ -624,8 +624,8 @@ class TeacherScheduleViewController: UIViewController, UITableViewDataSource, UI
                 continue
             }
             
-            // Группируем занятия по времени для объединения групп
-            let groupedByTime = Dictionary(grouping: dayItems) { $0.timePeriod }
+            // Группируем занятия по времени для объединения групп (нормализуем «13.10» → «13:10»)
+            let groupedByTime = Dictionary(grouping: dayItems) { APIScheduleItem.normalizeDottedTimePeriod($0.timePeriod) }
             
             // Сортируем временные слоты по времени начала, чтобы пары шли по порядку
             let sortedTimePeriods = groupedByTime.keys.sorted { lhs, rhs in
@@ -670,15 +670,16 @@ class TeacherScheduleViewController: UIViewController, UITableViewDataSource, UI
         return result
     }
     
-    /// Возвращает дату, построенную только из времени начала интервала вида "HH:mm-HH:mm"
+    /// Возвращает дату, построенную только из времени начала интервала вида "HH:mm-HH:mm" (API может отдать "13.10-14.40").
     private func startTimeDate(from timePeriod: String) -> Date? {
-        let components = timePeriod.split(separator: "-")
+        let normalized = APIScheduleItem.normalizeDottedTimePeriod(timePeriod)
+        let components = normalized.split(separator: "-")
         guard let startComponent = components.first else { return nil }
-        
+
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         formatter.locale = Locale(identifier: "ru_RU")
-        
+
         return formatter.date(from: String(startComponent))
     }
 

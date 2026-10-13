@@ -19,6 +19,7 @@ class LessonTableViewCell: UITableViewCell {
     private let teacherLabel = UILabel()
     private let roomLabel = UILabel()
     private let typeLabel = UILabel()
+    private let typeBadgeView = UIView()
     private let containerView = UIView()
     private let leftBorderView = UIView() // Синяя линия внутри контейнера
     private var lottieAnimationView: LottieAnimationView?
@@ -48,12 +49,31 @@ class LessonTableViewCell: UITableViewCell {
         leftBorderView.translatesAutoresizingMaskIntoConstraints = false
 
         // Настройка меток
-        [numberLabel, timeLabel, subjectLabel, groupLabel, teacherLabel, roomLabel, typeLabel].forEach {
+        [numberLabel, timeLabel, subjectLabel, groupLabel, teacherLabel, roomLabel].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             $0.textColor = .label
             $0.numberOfLines = 0
             containerView.addSubview($0)
         }
+
+        typeBadgeView.translatesAutoresizingMaskIntoConstraints = false
+        typeBadgeView.layer.cornerRadius = 8
+        typeBadgeView.clipsToBounds = true
+        typeBadgeView.backgroundColor = .clear
+        containerView.addSubview(typeBadgeView)
+
+        typeLabel.translatesAutoresizingMaskIntoConstraints = false
+        typeLabel.textColor = .label
+        typeLabel.numberOfLines = 1
+        typeLabel.font = .italicSystemFont(ofSize: 14)
+        typeBadgeView.addSubview(typeLabel)
+
+        NSLayoutConstraint.activate([
+            typeLabel.topAnchor.constraint(equalTo: typeBadgeView.topAnchor, constant: 4),
+            typeLabel.bottomAnchor.constraint(equalTo: typeBadgeView.bottomAnchor, constant: -4),
+            typeLabel.leadingAnchor.constraint(equalTo: typeBadgeView.leadingAnchor, constant: 8),
+            typeLabel.trailingAnchor.constraint(equalTo: typeBadgeView.trailingAnchor, constant: -8)
+        ])
 
         numberLabel.font = .boldSystemFont(ofSize: 16)
         timeLabel.font = .systemFont(ofSize: 14)
@@ -63,7 +83,6 @@ class LessonTableViewCell: UITableViewCell {
         groupLabel.textColor = .secondaryLabel
         teacherLabel.font = .italicSystemFont(ofSize: 14)
         roomLabel.font = .italicSystemFont(ofSize: 14)
-        typeLabel.font = .italicSystemFont(ofSize: 14)
         
         // Настройка кнопки EIOS
         eiosButton.translatesAutoresizingMaskIntoConstraints = false
@@ -124,8 +143,9 @@ class LessonTableViewCell: UITableViewCell {
             numberLabel.leadingAnchor.constraint(equalTo: leftBorderView.trailingAnchor, constant: 12), // Сдвигаем текст вправо от линии
             numberLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 8),
 
-            typeLabel.leadingAnchor.constraint(equalTo: numberLabel.trailingAnchor, constant: 8),
-            typeLabel.centerYAnchor.constraint(equalTo: numberLabel.centerYAnchor),
+            typeBadgeView.leadingAnchor.constraint(equalTo: numberLabel.trailingAnchor, constant: 8),
+            typeBadgeView.centerYAnchor.constraint(equalTo: numberLabel.centerYAnchor),
+            typeBadgeView.trailingAnchor.constraint(lessThanOrEqualTo: timeLabel.leadingAnchor, constant: -8),
 
             timeLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
             timeLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 8),
@@ -209,7 +229,7 @@ class LessonTableViewCell: UITableViewCell {
         
         if isPlaceholder {
             // Удаляем текстовые метки для анимации
-            [numberLabel, timeLabel, subjectLabel, groupLabel, teacherLabel, roomLabel, typeLabel].forEach { $0.isHidden = true }
+            [numberLabel, timeLabel, subjectLabel, groupLabel, teacherLabel, roomLabel, typeBadgeView].forEach { $0.isHidden = true }
 
             // Добавляем анимацию Lottie
             if lottieAnimationView == nil {
@@ -233,7 +253,7 @@ class LessonTableViewCell: UITableViewCell {
             }
         } else {
             // Показываем текстовые метки для других дней
-            [numberLabel, timeLabel, subjectLabel, groupLabel, teacherLabel, roomLabel, typeLabel].forEach { $0.isHidden = false }
+            [numberLabel, timeLabel, subjectLabel, groupLabel, teacherLabel, roomLabel, typeBadgeView].forEach { $0.isHidden = false }
             numberLabel.text = "№\(lesson.number)"
             timeLabel.text = lesson.time
 
@@ -261,11 +281,31 @@ class LessonTableViewCell: UITableViewCell {
             
             roomLabel.text = lesson.room
             typeLabel.text = lesson.type
+            applyTypeBadgeStyle(for: lesson.type)
             containerView.backgroundColor = .secondarySystemBackground
 
             // Убираем Lottie, если она была добавлена
             lottieAnimationView?.removeFromSuperview()
             lottieAnimationView = nil
+        }
+    }
+
+    private func applyTypeBadgeStyle(for rawType: String) {
+        let t = rawType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let isExam = t.contains("экзам")
+        let isCredit = t.contains("зач") // зачет/зачёт
+
+        if isExam || isCredit {
+            let accent: UIColor = isExam ? .systemRed : .systemGreen
+            typeBadgeView.layer.borderWidth = 1.2
+            typeBadgeView.layer.borderColor = accent.withAlphaComponent(0.75).cgColor
+            typeBadgeView.backgroundColor = accent.withAlphaComponent(0.10)
+            typeLabel.textColor = .label
+        } else {
+            typeBadgeView.layer.borderWidth = 0
+            typeBadgeView.layer.borderColor = UIColor.clear.cgColor
+            typeBadgeView.backgroundColor = .clear
+            typeLabel.textColor = .secondaryLabel
         }
     }
 

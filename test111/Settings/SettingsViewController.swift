@@ -568,6 +568,8 @@ class SettingsViewController: UIViewController {
         let isFullScheduleEnabled = UserDefaults.standard.bool(forKey: "showFullSchedule")
         showFullScheduleSwitch.isOn = isFullScheduleEnabled
 
+        applyCorrespondenceFullWeekAvailability()
+
         let isGroupSelectionRemoved = UserDefaults.standard.bool(forKey: "removeGroupSelection")
         removeGroupSelectionSwitch.isOn = isGroupSelectionRemoved
 
@@ -892,12 +894,18 @@ class SettingsViewController: UIViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        // Актуализируем доступность "Показать всю неделю" при каждом открытии настроек.
+        applyCorrespondenceFullWeekAvailability()
+
         // Отключаем все анимации перед появлением view
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         
         // Обновляем цвета навигации при каждом появлении экрана
         updateNavigationBarColors()
+
+        // Гарантируем правильное состояние блока времени уведомлений ДО фикса альфы/лейаута
+        updateNotificationTimeVisibility()
         
         // Убеждаемся, что все элементы находятся на своих местах без transform
         let allViews: [UIView] = [
@@ -906,7 +914,12 @@ class SettingsViewController: UIViewController {
         ]
         for cardView in allViews {
             cardView.transform = .identity
-            cardView.alpha = 1.0
+            if cardView == customCardView6 {
+                // Не даём блоку "Время уведомления" появляться при выключенных уведомлениях
+                cardView.alpha = notificationsSwitch.isOn ? 1.0 : 0.0
+            } else {
+                cardView.alpha = 1.0
+            }
         }
         
         // Принудительно обновляем layout, чтобы все элементы были на своих местах
@@ -977,6 +990,38 @@ class SettingsViewController: UIViewController {
         // Также обновляем сам view для гарантии
         view.setNeedsLayout()
         view.layoutIfNeeded()
+    }
+
+    private func applyCorrespondenceFullWeekAvailability() {
+        // Заочная группа определяется либо по уровню, либо по флагу активного режима сессии.
+        let selectedLevel = UserDefaults.standard.string(forKey: "selectedGroupLevel") ?? ""
+        let isCorrespondenceByLevel = selectedLevel.lowercased().contains("заочн")
+        let isCorrespondenceModeActive = UserDefaults.standard.bool(forKey: "correspondenceModeActive")
+        let isCorrespondence = isCorrespondenceByLevel || isCorrespondenceModeActive
+
+        if isCorrespondence {
+            showFullScheduleSwitch.setOn(false, animated: false)
+            showFullScheduleSwitch.isEnabled = false
+            showFullScheduleSwitch.alpha = 0.5
+            titleLabel.textColor = .secondaryLabel
+            UserDefaults.standard.set(false, forKey: "showFullSchedule")
+
+            // Для заочки смена недели тоже неактуальна (расписание по датам/сессии)
+            changeWeekSegmentedControl.isEnabled = false
+            changeWeekSegmentedControl.alpha = 0.5
+            changeWeekLabel.textColor = .secondaryLabel
+        } else {
+            showFullScheduleSwitch.isEnabled = true
+            showFullScheduleSwitch.alpha = 1.0
+            titleLabel.textColor = .label
+            showFullScheduleSwitch.isOn = UserDefaults.standard.bool(forKey: "showFullSchedule")
+
+            // Возвращаем доступность смены недели только если синхронизация недели выключена
+            let syncEnabled = UserDefaults.standard.bool(forKey: "syncWeekEnabled")
+            changeWeekSegmentedControl.isEnabled = !syncEnabled
+            changeWeekSegmentedControl.alpha = (!syncEnabled) ? 1.0 : 0.5
+            changeWeekLabel.textColor = syncEnabled ? .secondaryLabel : .label
+        }
     }
 
     private func syncWeekWithServer(applyOnlyUI: Bool) {

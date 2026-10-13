@@ -20,7 +20,7 @@ class ViewController: UIViewController, UITabBarDelegate {
     private let specialtyCard = CustomSelectionCardView(title: "Специальность", iconName: "books.vertical")
     private let groupCard = CustomSelectionCardView(title: "Группа", iconName: "person.3")
 
-    private var groups: [(name: String, url: String)] = []
+    private var groups: [(name: String, url: String, level: String)] = []
     private var selectedCourse: String?
     private var selectedSpecialty: String?
     var selectedGroup: String?
@@ -199,7 +199,7 @@ class ViewController: UIViewController, UITabBarDelegate {
                     print("Выбрано: \(self.selectedCourse ?? "") -> \(self.selectedSpecialty ?? "") -> \(group.name)")
                     print("Ссылка на расписание: \(group.url)")
                     self.groupCard.updateSubtitle(group.name)
-                    self.didSelectGroup(group.name)
+                    self.didSelectGroup(group.name, level: group.level)
                 }
             }
         }
@@ -221,7 +221,7 @@ class ViewController: UIViewController, UITabBarDelegate {
             case .success(let apiGroups):
                 DispatchQueue.main.async {
                     // Маппинг в старый формат только для UI выбора
-                    self?.groups = apiGroups.map { ($0.name, $0.name) }
+                    self?.groups = apiGroups.map { ($0.name, $0.name, $0.level) }
                     if apiGroups.isEmpty {
                         self?.selectedGroup = nil
                         self?.groupCard.updateSubtitle("Групп нет")
@@ -277,8 +277,11 @@ class ViewController: UIViewController, UITabBarDelegate {
         updateButtonState()
     }
 
-    func didSelectGroup(_ group: String) {
+    func didSelectGroup(_ group: String, level: String? = nil) {
         selectedGroup = group
+        if let level = level {
+            UserDefaults.standard.set(level, forKey: "selectedGroupLevel")
+        }
         MRMyTracker.trackEvent(name: "Выбрать группу")
         updateButtonState()
     }
@@ -292,6 +295,11 @@ class ViewController: UIViewController, UITabBarDelegate {
         if let selectedGroup = selectedGroup {
             // Сохраняем имя группы вместо URL
             defaults.set(selectedGroup, forKey: "selectedGroupURL")
+            if let g = groups.first(where: { $0.name == selectedGroup }) {
+                defaults.set(g.level, forKey: "selectedGroupLevel")
+            } else if let spec = selectedSpecialty, spec != "Все специальности" {
+                defaults.set(spec, forKey: "selectedGroupLevel")
+            }
             delegate?.didSelectGroup(withURL: selectedGroup)
             MRMyTracker.trackEvent(name: "Собрать или загрузить расписание")
             

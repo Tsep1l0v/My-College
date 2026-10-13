@@ -83,7 +83,13 @@ struct ScheduleProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<ScheduleEntry>) -> ()) {
         var entries: [ScheduleEntry] = []
-        let now = Date()
+        let calendar = Calendar.current
+        let nowRaw = Date()
+        // Нормализуем до минуты (без секунд), иначе в 18:00:00 может показываться entry от 17:59:30 → «95%»
+        let now = calendar.date(bySettingHour: calendar.component(.hour, from: nowRaw),
+                                minute: calendar.component(.minute, from: nowRaw),
+                                second: 0,
+                                of: nowRaw) ?? nowRaw
         
         // Создаём entries на каждую минуту следующего часа для плавного обновления прогресса
         for minuteOffset in 0..<60 {
@@ -123,6 +129,14 @@ struct ScheduleProvider: TimelineProvider {
         
         let calendar = Calendar.current
         let now = date
+        
+        // Для заочного/сессионного расписания (есть isoDate) используем календарные даты,
+        // а не индекс дня недели, иначе для данных на несколько недель время/день могут определяться неверно.
+        if schedule.contains(where: { $0.isoDate != nil }) {
+            if let sessionEntry = getSessionScheduleEntry(schedule: schedule, now: now, calendar: calendar) {
+                return sessionEntry
+            }
+        }
         let currentWeekday = calendar.component(.weekday, from: now)
         
         // Преобразуем день недели: 1=воскресенье, 2=понедельник, ..., 7=суббота
@@ -327,6 +341,81 @@ struct ScheduleProvider: TimelineProvider {
         )
     }
     
+    private func getSessionScheduleEntry(schedule: [DaySchedule], now: Date, calendar: Calendar) -> ScheduleEntry? {
+        let iso = Self.isoDateFormatter
+        let startToday = calendar.startOfDay(for: now)
+        let todayISO = iso.string(from: startToday)
+        
+        // Ищем расписание на сегодня по календарной дате
+        let todaySchedule = schedule.first { $0.isoDate == todayISO }
+        
+        let isTodayWeekend: Bool = {
+            guard let day = todaySchedule else { return true }
+            return day.lessons.isEmpty || day.lessons.allSatisfy { $0.subject == "Сегодня выходной. Наслаждайтесь отдыхом!" }
+        }()
+        
+        // Собираем все занятия с реальными календарными datetime
+        var timedLessons: [(lesson: Lesson, dayName: String, start: Date, end: Date)] = []
+        for day in schedule {
+            guard let isoDate = day.isoDate,
+                  let dayDate = iso.date(from: isoDate) else { continue }
+            let dayStart = calendar.startOfDay(for: dayDate)
+            for lesson in day.lessons {
+                if lesson.subject == "Сегодня выходной. Наслаждайтесь отдыхом!" { continue }
+                guard let (startMin, endMin) = parseFullLessonTime(lesson.time),
+                      let startDate = calendar.date(byAdding: .minute, value: startMin, to: dayStart),
+                      let endDate = calendar.date(byAdding: .minute, value: endMin, to: dayStart) else { continue }
+                timedLessons.append((lesson: lesson, dayName: day.day, start: startDate, end: endDate))
+            }
+        }
+        timedLessons.sort { $0.start < $1.start }
+        
+        var currentLesson: Lesson?
+        var currentProgress: Double?
+        if let current = timedLessons.first(where: { $0.start <= now && now < $0.end }) {
+            currentLesson = current.lesson
+            let duration = current.end.timeIntervalSince(current.start)
+            let elapsed = now.timeIntervalSince(current.start)
+            if duration > 0 {
+                currentProgress = min(1.0, max(0.0, elapsed / duration))
+            }
+        }
+        
+        let next = timedLessons.first(where: { $0.start > now })
+        let nextLesson = next?.lesson
+        let isNextInAnotherDay = next.map { !calendar.isDate($0.start, inSameDayAs: now) } ?? false
+        let nextLessonDayName: String? = {
+            guard let n = next else { return nil }
+            let days = calendar.dateComponents([.day], from: startToday, to: calendar.startOfDay(for: n.start)).day ?? 0
+            if days == 1 { return "Завтра" }
+            return n.dayName
+        }()
+        
+        // Проверяем, выходной ли завтра (для UI бейджа)
+        var isTomorrowWeekend = false
+        if let n = next {
+            let days = calendar.dateComponents([.day], from: startToday, to: calendar.startOfDay(for: n.start)).day ?? 0
+            if days > 1, let tomorrow = calendar.date(byAdding: .day, value: 1, to: startToday) {
+                let tomorrowISO = iso.string(from: tomorrow)
+                let tomorrowSchedule = schedule.first { $0.isoDate == tomorrowISO }
+                isTomorrowWeekend = tomorrowSchedule == nil || (tomorrowSchedule?.lessons.isEmpty ?? true) ||
+                (tomorrowSchedule?.lessons.allSatisfy { $0.subject == "Сегодня выходной. Наслаждайтесь отдыхом!" } ?? true)
+            }
+        }
+        
+        return ScheduleEntry(
+            date: now,
+            currentLesson: currentLesson,
+            nextLesson: nextLesson,
+            dayName: todaySchedule?.day,
+            isWeekend: isTodayWeekend,
+            currentLessonProgress: currentProgress,
+            isNextLessonInAnotherDay: isNextInAnotherDay,
+            nextLessonDayName: nextLessonDayName,
+            isTomorrowWeekend: isTomorrowWeekend
+        )
+    }
+    
     private func parseFullLessonTime(_ timeString: String) -> (start: Int, end: Int)? {
         // Форматы времени: "08:00-09:30", "08.00-09.30"
         var raw = timeString.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -388,6 +477,15 @@ struct ScheduleProvider: TimelineProvider {
         
         return (hour: hour, minute: minute)
     }
+    
+    private static let isoDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone.current
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
 }
 
 struct ScheduleEntry: TimelineEntry {
